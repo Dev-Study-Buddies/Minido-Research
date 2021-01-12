@@ -151,6 +151,217 @@ function generateError(message: string, code: number): never {
 }
 ```
 
+**Intersection types**
+
+* Creates an "intersection" of types where it combines multiple types (as opposed to union that lets you use either type)
+```ts
+// for object types, its alternative to interface and inheritance
+// type; note how name property is shared between the two....
+type Admin = {
+  name: string;
+  privileges: string[];
+}
+
+type Employee = {
+  name: string;
+  startDate: Date;
+}
+
+type ElevatedEmployee = Admin & Employee;
+
+const employee1: ElevatedEmployee = {
+  name: 'Max',
+  privileges: ['create-server'],
+  startDate: new Date(),
+}
+
+// interface
+interface Admin {
+  name: string;
+  privileges: string[];
+}
+
+interface Employee {
+  name: string;
+  startDate: Date;
+}
+
+interface ElevatedEmployee extends Admin, Employee {}
+
+const employee2: ElevatedEmployee = {
+  name: 'Max',
+  privileges: ['create-server'],
+  startDate: new Date(),
+}
+
+// Intersection of "types" (as opposed to objects)
+type Combinable = string | number;
+type Numeric = number | boolean;
+type Universal Combinable & Numeric;
+```
+
+* Type guards
+```ts
+// type guard with Javascript types
+type Combinable = string | number;
+
+function add(a: Combinable, b: Combinable) {
+
+    // This is called a type guard; gives you flexibility to work with various types and handle them correctly 
+    if(typeof a === 'string' || typeof b === 'string'){
+      return a.toString() + b.toString();
+    }
+
+    return a + b;
+}
+
+// type guard with custom types
+
+type Admin = {
+  name: string;
+  privileges: string[];
+}
+
+type Employee = {
+  name: string;
+  startDate: Date;
+}
+
+type UnknownEmployee = Employee | Admin;
+
+function printEmployeeInformation(emp: UnknownEmployee) {
+  if(typeof emp === 'Admin`) // this doesnt work as typeguard because typeof only works with Javascript types
+    console.log(emp.privileges); // this would be error because compiler not sure if its an Emmployee or admin
+  
+  if(emp.privileges)... // this doesn't work as a type guard either 
+
+  // valid type guard for checking if a property exists in an object 
+  // and therefore find out if its the correct type for the operation
+  if('privileges' in emp){
+    console.log(emp.privileges); // works
+  }
+  
+}
+
+// type guard for classes: use the `instanceof` operator
+
+// discriminated union type is a pattern that makes working type guards for union types easier
+// basically, you just create a literal member (or use an exisiting one) in a type/ interface
+//  and then you use switch statements to check against that "literal member" property to see what type it is
+interface Square {
+    kind: "square";
+    size: number;
+}
+
+interface Rectangle {
+    kind: "rectangle";
+    width: number;
+    height: number;
+}
+type Shape = Square | Rectangle;
+
+function area(s: Shape) {
+    switch (s.kind) {
+        case "square": return s.size * s.size;
+        case "rectangle": return s.width * s.height;
+        case "circle": return Math.PI * s.radius * s.radius;
+        default: const _exhaustiveCheck: never = s;
+    }
+}
+```
+
+**type casting**
+```ts
+const clueless: unknown = "1";
+
+// type cast clueless to number
+const clueNum: number = <number>clueless;
+// another format
+const clueNumPreferred = clueless as number;
+```
+
+**Index types**
+
+*dynamic property names*
+*duck typing*
+
+* You can define indexable types where you can iterate through them like arrays
+* Indexable types have an *index signature* that describes the types that we can use...as an index (key) and their return value type
+* index signatures can be either string or number
+* Indexable types are very handy for defining the return values of the properties of dynamic objects.
+* Good for when you don't know which property names you want or will be using in an object
+* More information: [article](https://levelup.gitconnected.com/introduction-to-typescript-interfaces-indexable-types-d66958523518), [article2](https://www.logicbig.com/tutorials/misc/typescript/indexable-types.html)
+
+```ts
+interface NameArray {
+    [index: number]: string;
+}
+let nameArray: NameArray = ["John", "Jane"];
+const john = nameArray[0];
+console.log(john);
+
+// another example
+class Animal {
+  name: string = '';
+}
+class Cat extends Animal {
+  breed: string = '';
+}
+interface Zoo {
+    [x: number]: Cat;
+    [x: string]: Animal;
+}
+
+// another example
+interface CustomErrors{
+  [property: string]: string;
+}
+
+const myErrors: CustomErrors{
+  email: 'Not a valid email',
+  username: 'Not a valid username',
+  // etc....you can add as many types here as you want in the form of string: string
+}
+```
+
+**Function overloads**
+```ts
+
+type Combinable = string | number;
+// Overloading function (or calling the same function with different parameters)
+function add(a: number, b:number): number;
+function add(a: number, b:string): string;
+function add(a: string, b:number): string;
+function add(a: string, b:string): string;
+function add(a: Combinable, b: Combinable) {
+  if(typeof a === 'string' || typeof b === 'string'){
+    return a.toString() + b.toString();
+  }
+  return a + b;
+}
+```
+
+**Optional Chaining**
+*good for accessing properties that may not exist on HTTP request objects*
+```ts
+// when foo is defined, foo.bar.baz() will be computed; 
+//but when foo is null or undefined, 
+//stop what we’re doing and just return undefined.
+let x = foo?.bar.baz();
+
+// javascript equivalanet
+let x = foo === null || foo === undefined ? undefined : foo.bar.baz();
+```
+
+**Nullish coalescing**
+*handles potentially null data*
+```ts
+const userInput = '';
+// if input is false (?), 0, empty, null or undefined, then store default value
+const storedData = userInput || 'default value'; // default value
+
+// Nullish operator ?? is for dealing specifically with ONLY null/ undefined values, not falsy values
+const storedData2 = userInput ?? 'DEFAULT'; // ''
 ## TypeScript Configuration & Compiler
 
 
@@ -182,11 +393,108 @@ function generateError(message: string, code: number): never {
   * `strict` - set to true to enable various strict compilation checks
   * additional checks options - enable these for code quality purposes
 
+## Some OOP notes
+
+* to prevent weird issues with `this` in classes, here is one solution
+```ts
+class Department {
+    name: string;
+
+    constructor(){...}
+
+    // This is a TypeScript thing
+    // Passing in `this` does not mean this method takes a `this` parameter
+    // It just means that `this` should refer to an instance of the Department class (this class), and nothing else
+    describe(this: Department){...}
+}
+
+const acc = new Department("xxx");
+const acc2 = {describe: acc.describe};
+
+acc2.descibe(); //invalid because `this` refers to instance of acc2 and not instance of Department
+```
+
+* You can avoid needing to declare class properties in a class, by declaring them in the constructor parameters
+```ts
+class ITDepartment extends Department {
+    constructor (id: string, public admins: string[]){
+      //...
+    }
+}
+
+// VERSUS
+
+admins: string[];
+
+class ITDepartment extends Department {
+    constructor (id: string, admins: string[]){
+      //...
+    }
+}
+```
+
+* In order to use `this` in a subclass, `super()` must first be explicitly invoked
+
+* `get` and `set` are used to create getters and setters
+```ts
+class Employee {
+  private _fullName: string = "";
+
+  get fullName(): string {
+    return this._fullName;
+  }
+
+  set fullName(newName: string) {
+    if (newName && newName.length > fullNameMaxLength) {
+      throw new Error("fullName has a max length of " + fullNameMaxLength);
+    }
+
+    this._fullName = newName;
+  }
+}
+```
+
+* `readonly` is used to set a value once, and never again
+
+* interfaces can also be used for defining the shape of functions (not just class objects)
+
+```ts
+// with type
+type AddNums = (a: number, b: number) => number;
+
+let sum: AddNums;
+
+add = (n1: number, n2: number) => {return n1+n2;};
+
+// with interface
+interface AddNums {
+  (a: number, b: number) => number;
+}
+
+let sum: AddNums;
+
+add = (n1: number, n2: number) => {return n1+n2;};
+
+// Atm, I don't think there is much difference between the two
+```
+
+* Optional parameters & properties
+```ts
+interface Person {
+  readonly name: string;
+  job?: string; //optional
+}
+```
+
+* interfaces are not compiled to js
+
 ## MISC 
 
 *Or, "idk in which section to put this information..."*
 
 * `!` is used to tell compiler that the developer knows for sure the value is not null, and so compiler shouldn't complain about potential null values
+
+
 
 
 
