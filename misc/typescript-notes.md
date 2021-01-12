@@ -61,7 +61,7 @@ const person: {
 ```ts
 enum RoleA {ADMIN, AUTHOR};
 RoleA.ADMIN // output -> 0
-enum RoleB {ADMIN = "admin, AUTHOR = "author"};
+enum RoleB {ADMIN = "admin", AUTHOR = "author"};
 enum RoleC {ADMIN = 100, AUTHOR = "AUTHOR"}; 
 ```
 
@@ -230,9 +230,12 @@ type Employee = {
 type UnknownEmployee = Employee | Admin;
 
 function printEmployeeInformation(emp: UnknownEmployee) {
-  if(typeof emp === 'Admin`) // this doesnt work as typeguard because typeof only works with Javascript types
-    console.log(emp.privileges); // this would be error because compiler not sure if its an Emmployee or admin
-  
+  // Error since typeguard because typeof only works with Javascript types
+  if(typeof emp === 'Admin'){
+  // error because compiler not sure if its an Emmployee or admin
+    console.log(emp.privileges); 
+  }
+
   if(emp.privileges)... // this doesn't work as a type guard either 
 
   // valid type guard for checking if a property exists in an object 
@@ -245,9 +248,11 @@ function printEmployeeInformation(emp: UnknownEmployee) {
 
 // type guard for classes: use the `instanceof` operator
 
-// discriminated union type is a pattern that makes working type guards for union types easier
-// basically, you just create a literal member (or use an exisiting one) in a type/ interface
-//  and then you use switch statements to check against that "literal member" property to see what type it is
+// discriminated union type is a pattern for using type guards for union types 
+
+// where you create a literal member (or use an exisiting one) in a type & interface declaration
+
+//  then use if/else, switch statements to check against that "literal member" property to see what type it is
 interface Square {
     kind: "square";
     size: number;
@@ -361,7 +366,8 @@ const userInput = '';
 const storedData = userInput || 'default value'; // default value
 
 // Nullish operator ?? is for dealing specifically with ONLY null/ undefined values, not falsy values
-const storedData2 = userInput ?? 'DEFAULT'; // ''
+const storedData2 = userInput ?? 'DEFAULT'; // 
+```
 ## TypeScript Configuration & Compiler
 
 
@@ -487,6 +493,10 @@ interface Person {
 ```
 
 * interfaces are not compiled to js
+  * They don't show up in the compiled JS files
+
+## Generics
+
 
 ## MISC 
 
