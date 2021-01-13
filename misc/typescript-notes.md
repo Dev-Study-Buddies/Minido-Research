@@ -496,7 +496,221 @@ interface Person {
   * They don't show up in the compiled JS files
 
 ## Generics
+```ts
+// the type in the brackets <> mean that whatever its attached to, that thing is of THAT type
 
+// Array of strings
+const names: Array<string>;
+// Arrayof strings and numbers
+const names2: Array<string | number>;
+// Promise that eventually returns a string
+const promise: Promise<string>;
+
+// An example of why we would want to use generics: type safety
+const promiseEx: Promise<number> = new Promise((resolve, reject) => {
+  setTimeout( () => {resolve(10);}, 2000);
+  })
+});
+
+promise.then( data => data.split('')); // Error! Can't call split on number
+
+//////////////////////
+// Ex of generic function; note, T is just a variable for any type
+function getArray<T>(items : T[] ) : T[] {
+    return new Array<T>().concat(items);
+}
+
+let myNumArr = getArray<number>([100, 200, 300]);
+let myStrArr = getArray<string>(["Hello", "World"]);
+
+myNumArr.push(400); // OK
+myStrArr.push("Hello TypeScript"); // OK
+
+//////////////////////
+// generic constraints (< T extends X>)
+// lets you call X methods & properties on the parameter
+// But does not restrict you to it
+// TODO: add better example of this ^
+function getArray<T extends Person>(items : T[] ) : T[] {
+    return new Array<T>().concat(items);
+}
+
+//////////////////////
+// generic "keyof" constraint
+// lets you specify that a parameter will be a property of an object
+// Since we don't know beforehand what the property name will be, we use generics and keyof to ensure it will be a valid property
+function extractAndConvert<T extends object, U extends keyof T>(obj: T, key: U){
+  return 'Value: ', obj[key];
+}
+
+extractAndConvert({name: 'bob'}, 'name');
+
+//////////////////////
+// generic class
+class GenericNumber<T> {
+  zeroValue: T;
+  add: (x: T, y: T) => T;
+}
+
+let myGenericNumber = new GenericNumber<number>();
+myGenericNumber.zeroValue = 0;
+myGenericNumber.add = function (x, y) {
+  return x + y;
+};
+```
+
+**Partial Type**
+*wraps an object of the type T in Partial<T>, and makes all the properties of the object of type T optional*
+* Use Case: lets you work with objects that aren't of type T (yet)
+
+```ts
+
+interface CourseGoal {
+  title: string;
+  description: string;
+  completeUntil: Date;
+}
+
+// Valid
+function createCourseGoal(t: string, desc: string, d: Date): CourseGoal { 
+  return {title: t, description: desc, completeUntil: d};
+}
+
+// Invalid because {} is not a CourseGoal object
+function createCourseGoal(t: string, desc: string, d: Date): CourseGoal { 
+  let c = {};
+  // let c2 : CourseGoal = {}; ...not sure if this is invalid too...I will assume it is
+  c.title = t;               // error
+  c.description = desc;      // error
+  c.completeUntil = d;       // error
+  
+  return c;
+}
+
+// Valid;
+// Partial type tells TS that at then
+function createCourseGoal(t: string, desc: string, d: Date): CourseGoal { 
+  let c : Partial<CourseGoal>= {};
+  c.title = t;      
+  c.description = desc;
+  c.completeUntil = d;
+  
+  return c as CourseGoal;
+}
+```
+
+**Readonly Generic Type**
+*prevents modification of object after initialization
+```ts
+const names: Readonly<string[]> = ['Bob', 'Anna'];
+names.push('Tim'); // error
+names.pop(); // error
+```
+**Generics vs Union**
+* Generics = allows multiple types, but locks in the type
+* Unions = allows multiple types, and lets you use any of the allowed types
+```ts
+<T extends string | number | boolean> // if T is string, then T is string uniformly throughout the program; it can't be anything else
+
+t: string | number | boolean // t can be string, number, or boolean. Its mixed. You can insert string, number, and boolean values
+```
+
+## Decorators
+*meta programming*
+
+* To enable decorators, make sure target is set to ES6 and experimentalDecorators is set to true
+* Class decorators runs when Javascript loads your class file, not when class object is constructed
+* You can add multiple decorators to a class; execution order is bottom up (closest to the class, and then goes up from there)
+* Property decorators require 2 parameters
+
+```ts
+//class decorator
+// when function is attached to a class as decorator, class constructor is the first parameter
+// you can do Logger(_: Function) to tell typescript to ignore passing in the consstructor
+function Logger(constructor: Function) {
+  console.log('Logging...');
+  console.log(constructor);
+}
+
+@Logger
+class Person{
+  name = 'Bob';
+  constructor(){
+    console.log('Creating person object...);
+  }
+}
+
+// when this is executed, `Logggin...` + constructor code, 
+//will be displayed first, before `creating person object` message
+
+//////////////////////
+// Decorator factory
+// Lets you customize decorator functions by passing paramters into the Decorator
+
+// this function returns a new function
+function Logger(logString: string) {
+  return function(constructor: Function) {
+    console.log(logString);
+    console.log(constructor);
+  }
+}
+
+// now it requires a (), because it needs to execute the function that is being returned by Logger
+// Note, we can pass in values into the decorator now
+@Logger('LOGGING-PERSON')
+class Person{
+  name = 'Bob';
+  constructor(){
+    console.log('Creating person object...');
+  }
+}
+
+// Another example; this example will create HTML content with the class, similiar to components in angular
+
+function WithTemplate(template: string, hookId: string){
+  return function(constructor: any){
+    const hookE1 = document.getElementById(hookId);
+    const p = new constructor();
+    if(hookE1){
+      hookE1.innerHTML = template;
+      hookE1.querySelector('h1')!.textContent = p.name;
+    }
+  }
+}
+
+@WithTemplate('<h1>MY Person Object</h1>', 'app')
+class Person{
+  name = 'Bob';
+  constructor(){
+    console.log('Creating person object...');
+  }
+}
+
+//////////////////////
+// Property decorator
+
+function Log(target: any, propetyName: string | Symbol){
+  console.log('Property decorator');
+  console.log(target, propertyName);
+}
+class Product {
+  @Log
+  title: string;
+  private _price: number;
+
+  set price(val: number){
+    if(val > 0)
+      this._price = val;
+    else 
+      throw new Error('Invalid price, should be postive);
+  }
+
+  constructor(t: string, p: number){
+    this.title = t;
+    this._price = p;
+  }
+}
+```
 
 ## MISC 
 
