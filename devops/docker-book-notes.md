@@ -76,6 +76,9 @@ docker container top <container id>
 
 # see all details of a container
 docker container inspect <container id>
+
+# See docker engine info
+docker info
 ```
 
 **Image commands**
@@ -321,16 +324,29 @@ FROM diamol/golang AS builder
    * the final stage includes only layer of OS tools to execute the native binary
 ---
 
-## Chapter 5: Sharing images with Docker Hub and other registries
+**image reference**
+* Domain - the URL domain
+* Account - Account name of the image owner
+* Image repo name: application name
+* Image Tag: version of the application (latest is the default if no tag is provided)
+  * Tags are used to identify different versions of the same application
+  * One tag naming scheme: `[major].[minor].[patch]`
+* Syntax: `docker.io/account-name/app-name:tag-version`
 
-* image reference
-  * Domain - the URL domain
-  * Account - Account name of the image owner
-  * Image repo name: application name
-  * Image Tag: version of the application (latest is the default if no tag is provided)
-    * Tags are used to identify different versions of the same application
-  * Syntax: `docker.io/account-name/app-name:tag-version`
-
-* Pushing images to Docker hub
-  * Need to login to the registry with the docker CLI
-  * Need to give image a reference that includes the name of an account where you have permission to push
+**Pushing images to Docker hub**
+* Need to login to the registry with the docker CLI
+  * Store docker ID (username) in a variable (ex: `export dockerId=<username>`)
+  * Login to docker hub: `docker login --username $dockerId`
+* Need to give image a reference that includes the name of an account where you have permission to push
+  * Ex: `docker image tag <image-name> $dockerId/<image-name>:<tag>`
+  * images can have multiple references (or be associated with multiple repos)
+* Push image to the registry
+  * Ex: `docker image push $dockerId/<image-name>:<tag>`
+  * Same with building images, Docker pushes/uploads image by layers
+    * layers are only uploaded if there isn't one with the same hash in the registry
+    * optimizing images will lead to having to push only couple of layers
+  
+**Docker Configuration**
+* Docker engine has a JSON config file called `daemon.json` for settings
+* Found in `C:\ProgramData\docker\config` on windows and `/etc/docker` on linux
+* Any changes to `daemon.json` requires Docker engine to be restarted for the changes to take effect
