@@ -1,79 +1,6 @@
 # Vue notes
 *[course](https://www.udemy.com/course/build-web-apps-with-vuejs-firebase/learn)*
 
-## Components
-
-**Application instance & Root component**
-```js
-const app = Vue.createApp({/*options*/})
-```
-
-* the code above creates the root component, root of all components registered to it
-  * Similar to `express` `app` object that is the root of all routers, middleware, etc
-* `app` has configuration options such as defining `error-handling` and other properties that can be used by components registered with the `app`
-* `app.mount(#attribute-name)`
-  * returns root component instance
-  * used to "mount" the `app` to the DOM element by calling the `#attribute-name` in a HTML element
-      - Ex: `<div id="attribute-name"></div>`
-
-**Component Instance Properties**
-* component options that are used to set properties such as methods, fields, etc to be used in the HTML template
-* `data` 
-  * this option is a function that returns a `data` object that represents various components properties and fields
-  * added to Vue's reactivity system (any changes to $data can be reacted to by Vue)
-  * accessed with `$data`
-* `methods`
-  * object that contains methods for the component
-    * used to react on events happening in the DOM
-    * used by `methods` or `watchers` to invoke in their own methods
-  * `this` is refers to the component instance in the methods
-    * for this reason, avoid using arrow functions
-  * methods are commonly used as event listeners
-  * when debouncing or throttling methods, it is better to do this in the `created()` lifecycle hook so component instances throttle/ debounce separately from other component instances
-* `computed`
-  * object that contains methods that react to data changes for the component
-  * similiar to `methods`
-    * difference: `computed` methods are cached
-      * Because they are expensive and should only be executed when any reactive dependencies (ex:`$data`) changes
-      * "if something independent of the computed property changes on the page and the UI is re-rendered, the cached result will be returned, and the computed property will not be re-calculated, sparing us a potentially expensive operation."
-  * Use cases
-    * when you need to compose new data from existing data sources
-    * on variables in HTML that is built from on or more data properties
-    * simplify complicated, nest property names 
-    * when need to reference a value from HTML
-    * when need to listen to changes from multiple data properties
-  * they are by default `getters`
-  * to use as a setter, see ex:
-    ```ts
-      computed: {
-        fullName: {
-        // getter
-        get() {
-          return this.firstName + ' ' + this.lastName
-        },
-        // setter
-        set(newValue) {
-          const names = newValue.split(' ')
-          this.firstName = names[0]
-          this.lastName = names[names.length - 1]
-        }
-      }
-    }
-
-    // example
-    vm.fullName = 'John Doe' // vm.firstName = John, vm.lastName = Doe
-    ```
-  
-* `watch`
-  * object that contains methods for performing async or expensive operations in response to changing data
-  
-  
-
-**LifeCycle**
-* lifecycle hooks can be used to add logic in between the various life cycle steps of a component
-  * ex: `create(){//...log creation of component}`
-* See: [LifeCycle Diagram](https://v3.vuejs.org/images/lifecycle.svg)
-
 ## Template Syntax
 
 **Interpolation**
@@ -248,6 +175,180 @@ const app = Vue.createApp({/*options*/})
   * updates data on user input events 
   * ignores the `value, checked, selected` attributes on HTML form elements
     * Therefore, declare the intial value in JS code rather than in HTML
+* Example
+  ```html
+  <input v-model="searchText" />
+  <!-- Same as: --->
+  <input :value="searchText" @input="searchText = $event.target.value" />
+  <!-- on component, looks like this: --->
+  <custom-input
+    :model-value="searchText"
+    @update:model-value="searchText = $event"
+  ></custom-input>
+  ```
 * See: [docs](https://v3.vuejs.org/guide/forms.html#form-input-bindings)
 
-## Components (Basics)
+
+## Components
+
+**Components**
+  * reusuable HTML element instances with a name
+
+**Application instance & Root component**
+```js
+const app = Vue.createApp({/*options*/})
+```
+
+* the code above creates the root component, root of all components registered to it
+  * Similar to `express` `app` object that is the root of all routers, middleware, etc
+* `app` has configuration options such as defining `error-handling` and other properties that can be used by components registered with the `app`
+* `app.mount(#attribute-name)`
+  * returns root component instance
+  * used to "mount" the `app` to the DOM element by calling the `#attribute-name` in a HTML element
+      - Ex: `<div id="attribute-name"></div>`
+* components can be globally registered with `app`
+  * globablly registered componsned can be used in the template of any component within the `app`
+  * ex:
+  ```js
+  // Create a Vue application
+  const app = Vue.createApp({})
+
+  // Define a new global component called button-counter
+  app.component('button-counter', {
+    data() {
+      return {
+        count: 0
+      }
+    },
+    template: `
+      <button @click="count++">
+        You clicked me {{ count }} times.
+      </button>`
+  })
+
+  // #compnents-demo is the HTML tag
+  app.mount('#components-demo')
+  ```
+
+  ```html
+  div id="components-demo">
+  <button-counter></button-counter>
+  </div>
+  ```
+
+**Component Instance Properties**
+* component options that are used to set properties such as methods, fields, etc to be used in the HTML template
+* `data` 
+  * this option is a function that returns a `data` object that represents various components properties and fields
+  * added to Vue's reactivity system (any changes to $data can be reacted to by Vue)
+  * accessed with `$data`
+* `props`
+  * Used to pass data from a parent component down to its child components
+  * unlike `data`, these are custom HTML attributes
+* `methods`
+  * object that contains methods for the component
+    * used to react on events happening in the DOM
+    * used by `methods` or `watchers` to invoke in their own methods
+  * `this` is refers to the component instance in the methods
+    * for this reason, avoid using arrow functions
+  * methods are commonly used as event listeners
+  * when debouncing or throttling methods, it is better to do this in the `created()` lifecycle hook so component instances throttle/ debounce separately from other component instances
+* `computed`
+  * object that contains methods that react to data changes for the component
+  * similiar to `methods`
+    * difference: `computed` methods are cached
+      * Because they are expensive and should only be executed when any reactive dependencies (ex:`$data`) changes
+      * "if something independent of the computed property changes on the page and the UI is re-rendered, the cached result will be returned, and the computed property will not be re-calculated, sparing us a potentially expensive operation."
+  * Use cases
+    * when you need to compose new data from existing data sources
+    * on variables in HTML that is built from on or more data properties
+    * simplify complicated, nest property names 
+    * when need to reference a value from HTML
+    * when need to listen to changes from multiple data properties
+  * they are by default `getters`
+  * to use as a setter, see ex:
+    ```ts
+      computed: {
+        fullName: {
+        // getter
+        get() {
+          return this.firstName + ' ' + this.lastName
+        },
+        // setter
+        set(newValue) {
+          const names = newValue.split(' ')
+          this.firstName = names[0]
+          this.lastName = names[names.length - 1]
+        }
+      }
+    }
+
+    // example
+    vm.fullName = 'John Doe' // vm.firstName = John, vm.lastName = Doe
+    ```
+  
+* `watch`
+  * object that contains methods for performing async or expensive operations in response to changing data
+  
+  
+
+**LifeCycle**
+* lifecycle hooks can be used to add logic in between the various life cycle steps of a component
+  * ex: `create(){//...log creation of component}`
+* See: [LifeCycle Diagram](https://v3.vuejs.org/images/lifecycle.svg)
+
+**Custom Child Components Events**
+* you can use `$emit('eventname')` to emit custom events and listen for those events with `@eventname`
+  * you can emit values with the event by including it in as the second parameter in `$emit()`
+    * access this value with `$event`
+    * ex: `<blog-post ... @enlarge-text="postFontSize += $event"></blog-post>`
+    * ex: `<blog-post ... @enlarge-text="onEnlargeText"></blog-post>` (`$event` is automatically passed into method as arg)
+* you can use custom events with `v-model` as well
+  ```html
+  <input v-model="searchText" />
+  <!-- Same as: --->
+  <input :value="searchText" @input="searchText = $event.target.value" />
+  <!-- on component, looks like this: --->
+  <custom-input
+    :model-value="searchText"
+    @update:model-value="searchText = $event"
+  ></custom-input>
+  ```
+* See: [docs](https://v3.vuejs.org/guide/component-basics.html#listening-to-child-components-events)
+
+**HTML element: `<slot)>`**
+  * used to make components act like HTML elements
+    * allows you to pass data to component directly
+  * example:
+  ```html
+    <alert-box>
+    Something bad happened.
+  </alert-box>
+  <!-- output: Error! Something bad happened. --->
+  ```
+  const app = Vue.createApp({})
+
+  app.component('alert-box', {
+    template: `
+      <div class="demo-alert-box">
+        <strong>Error!</strong>
+        <slot></slot>
+      </div>
+    `
+  })
+
+  app.mount('#slots-demo')
+  ```js
+  // component code
+  ```
+
+**Dynamic Components**
+
+* Lets you dynamically switch between components with `is` attribute
+* See: [docs](https://v3.vuejs.org/guide/component-basics.html#dynamic-components)
+
+**DOM HTML Restrictions**
+* Elements like `<table>` restricts what elements can appear inside them
+  * to get around this, use: `v-is` directive
+* See: [docs](https://v3.vuejs.org/guide/component-basics.html#dom-template-parsing-caveats)
+
